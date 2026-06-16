@@ -12,9 +12,33 @@ export default function CreditScore({ userId }) {
     setLoading(true);
     try {
       const response = await base44.functions.invoke('calculateCreditScore', { userId });
-      setScoreData(response.data);
+      if (response?.data) {
+        // Transform the response to match component expectations
+        const data = response.data;
+        setScoreData({
+          creditScore: data.score,
+          category: data.grade,
+          maxLoanAmount: Math.round(data.score * 100),
+          statistics: {
+            completed: data.factors?.paid_loans || 0,
+            overdue: 0
+          },
+          calculatedAt: new Date().toISOString()
+        });
+      }
     } catch (error) {
       console.error('Error loading credit score:', error);
+      // Set default data on error
+      setScoreData({
+        creditScore: 650,
+        category: 'B',
+        maxLoanAmount: 65000,
+        statistics: {
+          completed: 0,
+          overdue: 0
+        },
+        calculatedAt: new Date().toISOString()
+      });
     } finally {
       setLoading(false);
     }
@@ -39,10 +63,10 @@ export default function CreditScore({ userId }) {
   if (!scoreData) return null;
 
   const getScoreColor = () => {
-    if (scoreData.creditScore >= 850) return 'from-emerald-500 to-green-500';
-    if (scoreData.creditScore >= 750) return 'from-blue-500 to-cyan-500';
-    if (scoreData.creditScore >= 650) return 'from-violet-500 to-purple-500';
-    if (scoreData.creditScore >= 550) return 'from-amber-500 to-orange-500';
+    if (scoreData.creditScore >= 800) return 'from-emerald-500 to-green-500';
+    if (scoreData.creditScore >= 700) return 'from-blue-500 to-cyan-500';
+    if (scoreData.creditScore >= 600) return 'from-violet-500 to-purple-500';
+    if (scoreData.creditScore >= 500) return 'from-amber-500 to-orange-500';
     return 'from-red-500 to-pink-500';
   };
 
@@ -70,7 +94,7 @@ export default function CreditScore({ userId }) {
           <div className={`w-32 h-32 rounded-full bg-gradient-to-br ${getScoreColor()} flex items-center justify-center shadow-lg`}>
             <div className="w-28 h-28 rounded-full bg-slate-900 flex flex-col items-center justify-center">
               <p className="text-4xl font-bold text-white">{scoreData.creditScore}</p>
-              <p className="text-xs text-slate-400">из 1000</p>
+              <p className="text-xs text-slate-400">из 850</p>
             </div>
           </div>
         </div>

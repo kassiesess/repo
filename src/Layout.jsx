@@ -1,8 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { createPageUrl } from '@/utils';
-import { Home, Plus, Wallet, ClipboardList, MoreHorizontal, Sun, Moon } from 'lucide-react';
-import { motion } from 'framer-motion';
+import { Home, Plus, Wallet, ClipboardList, MoreHorizontal } from 'lucide-react';
 
 const navItems = [
   { name: 'Home', label: 'Главная', icon: Home },

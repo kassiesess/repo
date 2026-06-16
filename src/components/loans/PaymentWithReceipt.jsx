@@ -1,11 +1,9 @@
 import React, { useState } from 'react';
 import { base44 } from '@/api/base44Client';
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Loader2, Upload, CheckCircle2, Banknote, FileText, Copy, ExternalLink } from 'lucide-react';
+import { Loader2, Upload, CheckCircle2, Banknote, Copy } from 'lucide-react';
 import { toast } from 'sonner';
 
 const banks = [

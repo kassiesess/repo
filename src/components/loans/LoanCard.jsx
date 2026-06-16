@@ -1,11 +1,9 @@
 import React from 'react';
-import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { format } from 'date-fns';
 import { ru } from 'date-fns/locale';
-import { ArrowUpRight, ArrowDownLeft, Calendar, Percent, Clock, ChevronRight } from 'lucide-react';
+import { ArrowUpRight, ArrowDownLeft, Calendar, ChevronRight } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { createPageUrl } from '@/utils';
 

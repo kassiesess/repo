@@ -27,4 +27,6 @@ dist-ssr
 *.sln
 *.sw?
 
-.env
+.env*.db
+*.db-shm
+*.db-wal

@@ -259,27 +259,55 @@ const mockFunctions = {
         return this.generateTaxReport(params);
       case 'calculateLateFees':
         return this.calculateLateFees(params);
+      case 'checkOverdueLoans':
+        return this.checkOverdueLoans(params);
+      case 'checkInsuranceEligibility':
+        return this.checkInsuranceEligibility(params);
+      case 'processAutomaticPayment':
+        return this.processAutomaticPayment(params);
+      case 'sendPaymentReminders':
+        return this.sendPaymentReminders(params);
+      case 'sendPushNotification':
+        return this.sendPushNotification(params);
+      case 'sendBulkNotifications':
+        return this.sendBulkNotifications(params);
+      case 'verifyDocument':
+        return this.verifyDocument(params);
+      case 'generateLoanContract':
+        return this.generateLoanContract(params);
+      case 'generateDigitalSignature':
+        return this.generateDigitalSignature(params);
+      case 'generateAnalyticsReport':
+        return this.generateAnalyticsReport(params);
+      case 'exportUserData':
+        return this.exportUserData(params);
+      case 'backupDatabase':
+        return this.backupDatabase(params);
       default:
         console.warn(`Unknown function: ${functionName}`);
-        return null;
+        return { data: null };
     }
   },
 
   async aiChat({ message, session_id }) {
-    // Simple AI response simulation
+    // Simple AI response simulation with proper response format
     const responses = {
       'привет': 'Здравствуйте! Чем могу помочь с вашими займами?',
       'здравствуйте': 'Здравствуйте! Чем могу помочь с вашими займами?',
       'здравствуй': 'Здравствуйте! Чем могу помочь с вашими займами?',
       'help': 'Я могу помочь вам с информацией о займах, платежах и верификации.',
       'help_ru': 'Я могу помочь вам с информацией о займах, платежах и верификации.',
+      'как рассчитать проценты по займу?': 'Для расчета процентов используйте формулу: Сумма × Ставка × (Срок / 12). Например, при сумме 100 000 сом, ставке 12% годовых и сроке 6 месяцев: 100 000 × 0.12 × 0.5 = 6 000 сом процентов.',
+      'какие документы нужны для займа?': 'Для оформления займа вам понадобятся: паспорт гражданина КР, ИНН, и контактные данные заемщика. При верификации потребуется фото паспорта и селфи.',
+      'что делать при просрочке платежа?': 'При просрочке платежа: 1) Свяжитесь с другой стороной для урегулирования, 2) Оплатите задолженность как можно скорее, 3) При необходимости сгенерируйте исковое заявление через приложение.',
+      'максимальная процентная ставка в кр?': 'В Кыргызской Республике максимальная процентная ставка по займам между физическими лицами не ограничена законодательно. Однако рекомендуется соблюдать разумные ставки и указывать их в договоре.'
     };
     
     const lowerMessage = message.toLowerCase();
     let response = responses[lowerMessage];
     
     if (!response) {
-      response = `Я получил ваше сообщение: "${message}". В автономном режиме я предоставляю базовую информацию. Для полной функциональности подключитесь к серверу.`;
+      response = `Я получил ваше сообщение: "${message}". В автономном режиме я предоставляю базовую информацию.\n\nВы можете спросить меня о:\n• Создании займов\n• Расчете процентов\n• Требованиях к документам\n• Действиях при просрочке\n• Юридических вопросах`;
     }
 
     // Save message to chat history
@@ -292,6 +320,16 @@ const mockFunctions = {
       sessions.push(session);
     }
     
+    // Save user message
+    messages.push({
+      id: generateUUID(),
+      session_id: session.id,
+      role: 'user',
+      content: message,
+      created_date: new Date().toISOString(),
+    });
+    
+    // Save assistant response
     messages.push({
       id: generateUUID(),
       session_id: session.id,
@@ -303,25 +341,41 @@ const mockFunctions = {
     setStoredData(STORAGE_KEYS.CHAT_SESSIONS, sessions);
     setStoredData(STORAGE_KEYS.CHAT_MESSAGES, messages);
     
-    return { response };
+    // Return proper response format expected by AIAssistant component
+    return { data: { reply: response } };
   },
 
   async getChatHistory({ session_id }) {
     const messages = getStoredData(STORAGE_KEYS.CHAT_MESSAGES);
-    return messages.filter(m => m.session_id === session_id);
+    const sessionMessages = messages
+      .filter(m => m.session_id === session_id)
+      .sort((a, b) => new Date(a.created_date) - new Date(b.created_date));
+    
+    // Return proper response format expected by AIAssistant component
+    return { data: { messages: sessionMessages } };
   },
 
   async kycVerification({ document_image, selfie_image, user_id }) {
-    // Simulate KYC verification
+    // Simulate KYC verification with proper response format
     await new Promise(resolve => setTimeout(resolve, 2000));
     
     // 90% success rate simulation
     const isApproved = Math.random() > 0.1;
     
+    // Return proper response format expected by VerificationFlow component
     return {
-      status: isApproved ? 'approved' : 'rejected',
-      reason: isApproved ? null : 'Не удалось проверить документ. Попробуйте еще раз.',
-      confidence: isApproved ? 0.95 : 0.3,
+      data: {
+        verified: isApproved,
+        passport: {
+          data: {
+            full_name: 'Иванов Иван Иванович',
+            series: 'ID',
+            number: '1234567',
+            inn: '12345678901234'
+          },
+          issues: isApproved ? [] : ['Документ нечеткий', 'Селфи не соответствует']
+        }
+      }
     };
   },
 
@@ -330,15 +384,17 @@ const mockFunctions = {
     await new Promise(resolve => setTimeout(resolve, 500));
     
     return {
-      risk_score: Math.random() * 0.3, // Low risk
-      is_suspicious: false,
-      warnings: [],
+      data: {
+        risk_score: Math.random() * 0.3, // Low risk
+        is_suspicious: false,
+        warnings: [],
+      }
     };
   },
 
   async notifyLoanCreated({ loan_id, borrower_email }) {
     console.log(`Notification: Loan ${loan_id} created for ${borrower_email}`);
-    return { success: true };
+    return { data: { success: true } };
   },
 
   async calculateCreditScore({ userId }) {
@@ -351,13 +407,15 @@ const mockFunctions = {
     const score = Math.min(850, 300 + (totalLoans * 50) + (paidLoans * 30));
     
     return {
-      score,
-      grade: score >= 750 ? 'A' : score >= 650 ? 'B' : score >= 550 ? 'C' : 'D',
-      factors: {
-        payment_history: paidLoans > 0 ? 'good' : 'no_history',
-        total_loans: totalLoans,
-        paid_loans: paidLoans,
-      },
+      data: {
+        score,
+        grade: score >= 750 ? 'A' : score >= 650 ? 'B' : score >= 550 ? 'C' : 'D',
+        factors: {
+          payment_history: paidLoans > 0 ? 'good' : 'no_history',
+          total_loans: totalLoans,
+          paid_loans: paidLoans,
+        },
+      }
     };
   },
 
@@ -371,11 +429,13 @@ const mockFunctions = {
     const totalInterest = userPayments.reduce((sum, p) => sum + (p.interest_amount || 0), 0);
     
     return {
-      year,
-      user_id: userId,
-      total_payments: userPayments.length,
-      total_interest: totalInterest,
-      report_date: new Date().toISOString(),
+      data: {
+        year,
+        user_id: userId,
+        total_payments: userPayments.length,
+        total_interest: totalInterest,
+        report_date: new Date().toISOString(),
+      }
     };
   },
 
@@ -383,20 +443,150 @@ const mockFunctions = {
     const loans = getStoredData(STORAGE_KEYS.LOANS);
     const loan = loans.find(l => l.id === loan_id);
     
-    if (!loan) return { error: 'Loan not found' };
+    if (!loan) return { data: { error: 'Loan not found' } };
     
     const now = new Date();
-    const dueDate = new Date(loan.due_date);
+    const dueDate = new Date(loan.end_date);
     const daysLate = Math.max(0, Math.floor((now - dueDate) / (1000 * 60 * 60 * 24)));
     
-    if (daysLate === 0) return { days_late: 0, late_fee: 0 };
+    if (daysLate === 0) return { data: { days_late: 0, late_fee: 0 } };
     
     const dailyRate = 0.001; // 0.1% per day
     const lateFee = loan.amount * dailyRate * daysLate;
     
     return {
-      days_late: daysLate,
-      late_fee: Math.min(lateFee, loan.amount * 0.3), // Cap at 30%
+      data: {
+        days_late: daysLate,
+        late_fee: Math.min(lateFee, loan.amount * 0.3), // Cap at 30%
+      }
+    };
+  },
+
+  async checkOverdueLoans({ userId }) {
+    const loans = getStoredData(STORAGE_KEYS.LOANS);
+    const now = new Date();
+    
+    const overdueLoans = loans.filter(loan => {
+      const isUserLoan = loan.lender_id === userId || loan.borrower_id === userId;
+      const isOverdue = loan.status === 'active' && new Date(loan.end_date) < now;
+      return isUserLoan && isOverdue;
+    });
+    
+    return { data: { loans: overdueLoans, count: overdueLoans.length } };
+  },
+
+  async checkInsuranceEligibility({ userId, loanId }) {
+    const loans = getStoredData(STORAGE_KEYS.LOANS);
+    const loan = loans.find(l => l.id === loanId);
+    
+    if (!loan) return { data: { eligible: false, reason: 'Loan not found' } };
+    
+    const isEligible = loan.status === 'active' && new Date(loan.end_date) > new Date();
+    return {
+      data: {
+        eligible: isEligible,
+        reason: isEligible ? 'Loan is active and within term' : 'Loan does not meet eligibility criteria'
+      }
+    };
+  },
+
+  async processAutomaticPayment({ loanId, paymentAmount }) {
+    return { data: { success: true, transaction_id: generateUUID() } };
+  },
+
+  async sendPaymentReminders({ userId }) {
+    return { data: { sent: 0 } };
+  },
+
+  async sendPushNotification({ userId, title, body }) {
+    console.log(`Push notification to ${userId}: ${title} - ${body}`);
+    return { data: { success: true } };
+  },
+
+  async sendBulkNotifications({ userIds, title, body }) {
+    return { data: { sent: userIds.length } };
+  },
+
+  async verifyDocument({ file_url, document_type }) {
+    await new Promise(resolve => setTimeout(resolve, 1500));
+    return { data: { verified: true, details: 'Document verified successfully' } };
+  },
+
+  async generateLoanContract({ loanId }) {
+    const loans = getStoredData(STORAGE_KEYS.LOANS);
+    const loan = loans.find(l => l.id === loanId);
+    
+    if (!loan) return { data: { error: 'Loan not found' } };
+    
+    return {
+      data: {
+        contract_url: 'data:text/html;charset=utf-8,' + encodeURIComponent('<html><body><h1>Contract HTML</h1></body></html>'),
+        contract_id: `CONTRACT-${loanId.substring(0, 8).toUpperCase()}`
+      }
+    };
+  },
+
+  async generateDigitalSignature({ userId, documentHash }) {
+    return {
+      data: {
+        signature: `SIG-${Date.now()}-${Math.random().toString(36).substr(2, 9).toUpperCase()}`,
+        verified: true
+      }
+    };
+  },
+
+  async generateAnalyticsReport({ userId, startDate, endDate }) {
+    const loans = getStoredData(STORAGE_KEYS.LOANS);
+    const payments = getStoredData(STORAGE_KEYS.PAYMENTS);
+    
+    const userLoans = loans.filter(l => l.lender_id === userId || l.borrower_id === userId);
+    const userPayments = payments.filter(p => p.user_id === userId);
+    
+    return {
+      data: {
+        total_loans: userLoans.length,
+        active_loans: userLoans.filter(l => l.status === 'active').length,
+        total_payments: userPayments.length,
+        total_amount_paid: userPayments.reduce((sum, p) => sum + (p.amount || 0), 0),
+        report_period: { start: startDate, end: endDate }
+      }
+    };
+  },
+
+  async exportUserData({ userId }) {
+    const loans = getStoredData(STORAGE_KEYS.LOANS);
+    const payments = getStoredData(STORAGE_KEYS.PAYMENTS);
+    
+    const userData = {
+      loans: loans.filter(l => l.lender_id === userId || l.borrower_id === userId),
+      payments: payments.filter(p => p.user_id === userId),
+      export_date: new Date().toISOString()
+    };
+    
+    return {
+      data: {
+        download_url: 'data:application/json;charset=utf-8,' + encodeURIComponent(JSON.stringify(userData, null, 2)),
+        filename: `user_data_${userId.substring(0, 8)}.json`
+      }
+    };
+  },
+
+  async backupDatabase() {
+    const backup = {
+      loans: getStoredData(STORAGE_KEYS.LOANS),
+      payments: getStoredData(STORAGE_KEYS.PAYMENTS),
+      notifications: getStoredData(STORAGE_KEYS.NOTIFICATIONS),
+      insurance_companies: getStoredData(STORAGE_KEYS.INSURANCE_COMPANIES),
+      loan_insurances: getStoredData(STORAGE_KEYS.LOAN_INSURANCES),
+      backup_date: new Date().toISOString()
+    };
+    
+    return {
+      data: {
+        backup_id: generateUUID(),
+        download_url: 'data:application/json;charset=utf-8,' + encodeURIComponent(JSON.stringify(backup, null, 2)),
+        size_bytes: new Blob([JSON.stringify(backup)]).size
+      }
     };
   },
 };
